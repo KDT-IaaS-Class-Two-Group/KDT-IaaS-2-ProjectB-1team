@@ -17,7 +17,7 @@ export default function Home() {
   const [isOpen, setIsOpen] = useState<boolean>(true);
 
   const data = {
-    src: "https://images.unsplash.com/photo-1549388604-817d15aa0110",
+    src: "https://images.unsplash.com/photo-1597262975002-c5c3b14bbd62",
     title: "도미상",
     body: "테스트"
   }
