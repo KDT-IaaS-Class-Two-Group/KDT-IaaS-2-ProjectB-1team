@@ -1,5 +1,5 @@
 {
-  "name": "kdt-iaas-2-projectb-1team",
+  "name": "server",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
