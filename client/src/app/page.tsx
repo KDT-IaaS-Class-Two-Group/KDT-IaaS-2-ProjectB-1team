@@ -5,6 +5,7 @@ import NavBar from '../components/NavBar';
 import ImageGallery from '../components/ImageGallery';
 import FloatingButton from '../components/FileUploader';
 import { ImageListComponent } from '../components/image_list_component'; // 이미지 리스트 컴포넌트 가져오기
+import ModalComponent from '@/components/modal';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false); // 로딩 상태
@@ -12,6 +13,14 @@ export default function Home() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const controllerRef = useRef<AbortController | null>(null); // 업로드 취소용 AbortController
   const uploadTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 업로드 시뮬레이션 취소용 Timeout Ref
+
+  const [isOpen, setIsOpen] = useState<boolean>(true);
+
+  const data = {
+    src: "https://images.unsplash.com/photo-1549388604-817d15aa0110",
+    title: "도미상",
+    body: "테스트"
+  }
 
   // 파일 선택 시 처리하는 함수
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -120,7 +129,6 @@ export default function Home() {
   return (
     <>
       <NavBar />
-
       {/* 네비게이션 바와 겹치지 않게 상단에 패딩 추가 */}
       <div className="pt-20">
         {/* 업로드된 이미지 갤러리 */}
@@ -146,6 +154,7 @@ export default function Home() {
         className="hidden"
         onChange={handleFileChange}
       />
+      <ModalComponent isOpen={isOpen} onOpenChange={() => {setIsOpen((prev) => !prev)}} data={data}/>
     </>
   );
 }
