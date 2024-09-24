@@ -42,10 +42,10 @@ export default function ModalComponent({
 
       if (twoD) {
         // 이미지를 캔버스에 그리기
-        twoD.drawImage(canvasImg, 0, 0, canvas.width, canvas.height);
+        twoD.drawImage(canvasImg, 0, 0, canvas.width, canvas.height-100);
         // 이름 텍스트 추가
-        twoD.font = "bold 24px Arial"; // 폰트 설정
-        twoD.fillStyle = "black"; // 텍스트 색상
+        twoD.font = "bold 50px Arial"; // 폰트 설정
+        twoD.fillStyle = "white"; // 텍스트 색상
         twoD.textAlign = "center"; // 텍스트 정렬
         twoD.fillText(data.title, canvas.width / 2, canvas.height - 30); // 텍스트 그리기 (중앙 하단)
       } else {
