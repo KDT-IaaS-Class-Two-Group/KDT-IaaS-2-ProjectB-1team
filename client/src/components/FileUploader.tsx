@@ -1,14 +1,15 @@
-'use client';
+"use client";
 
-import React from 'react';
-import CircularProgress from '@mui/material/CircularProgress';
-import CloseIcon from '@mui/icons-material/Close';
-import PhotoIcon from '@mui/icons-material/Photo';
+import React from "react";
+import CircularProgress from "@mui/material/CircularProgress";
+import CloseIcon from "@mui/icons-material/Close";
+import PhotoIcon from "@mui/icons-material/Photo";
 
 type FloatingButtonProps = {
   isLoading: boolean;
   handleCancelUpload: () => void;
   handleIconClick: () => void;
+  // a
 };
 
 export default function FloatingButton({
@@ -23,16 +24,16 @@ export default function FloatingButton({
     >
       {isLoading ? (
         <div className="relative">
-          <CircularProgress size={32} sx={{ color: '#fff' }} />
+          <CircularProgress size={32} sx={{ color: "#fff" }} />
           <CloseIcon
             sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              fontSize: '24px',
-              color: '#fff',
-              cursor: 'pointer',
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              fontSize: "24px",
+              color: "#fff",
+              cursor: "pointer",
             }}
             onClick={handleCancelUpload}
           />
