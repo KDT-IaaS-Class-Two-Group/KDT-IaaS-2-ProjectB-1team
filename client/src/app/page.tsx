@@ -1,88 +1,74 @@
-// app/page.tsx
-'use client';
-
-import { Swiper, SwiperSlide } from 'swiper/react';
-import 'swiper/css';
-import 'swiper/css/pagination';
-import FileUploader from '../../src/components/FileUploader';
-
-import { Pagination } from 'swiper/modules';
-
-// Material UI 컴포넌트 가져오기
-import { SpeedDial, SpeedDialAction, SpeedDialIcon } from '@mui/material';
-import HomeIcon from '@mui/icons-material/Home';
-import SearchIcon from '@mui/icons-material/Search';
-import ShareIcon from '@mui/icons-material/Share';
-
-type Action = {
-  icon: JSX.Element;
-  name: string;
-};
-
-const actions: Action[] = [
-  { icon: <HomeIcon />, name: 'Home' },
-  { icon: <SearchIcon />, name: 'Search' },
-  { icon: <ShareIcon />, name: 'Share' },
-];
+import { ImageListComponent } from "@/components/image_list_component";
 
 export default function Home() {
+
+  const itemData = [
+    {
+      img: "https://images.unsplash.com/photo-1549388604-817d15aa0110",
+      title: "Bed",
+      text: "이건 침대야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1525097487452-6278ff080c31",
+      title: "Books",
+      text: "이건 책이야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1523413651479-597eb2da0ad6",
+      title: "Sink",
+      text: "이건 몰라야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1563298723-dcfebaa392e3",
+      title: "Kitchen",
+      text: "이건 부엌이야야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1588436706487-9d55d73a39e3",
+      title: "Blinds",
+      text: "이건 침대야 침대침야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1574180045827-681f8a1a9622",
+      title: "Chairs",
+      text: "이건 허먼밀러야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1530731141654-5993c3016c77",
+      title: "Laptop",
+      text: "이건 맥북야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1481277542470-605612bd2d61",
+      title: "Doors",
+      text: "이건 문이야야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7",
+      title: "Coffee",
+      text: "이건 커피일지도야야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1516455207990-7a41ce80f7ee",
+      title: "Storage",
+      text: "이건 저장고일지도야"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1597262975002-c5c3b14bbd62",
+      title: "Candle",
+      text: "이건 침대야ㅈㄷㄹㄷㅈㄹㄷㅈㄹㄷㅈㄹㅈㄷㄹㅈㄹㅈㄷㄹㅈㄹㅈㄷㄹㅈㄷㄹㄷㅈㄹㄷㅈㄹㄷㅈ"
+    },
+    {
+      img: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4",
+      title: "Coffee table",
+      text: "이건 침대야"
+    },
+  ];
+
+
   return (
-    <div style={{ height: '100vh', position: 'relative' }}>
-      {/* 전체 배경으로 Swiper 설정 */}
-      <Swiper
-        modules={[Pagination]} // pagination 모듈
-        spaceBetween={0} // 슬라이드 간 간격 제거
-        slidesPerView={1} // 한 번에 보일 슬라이드 개수
-        centeredSlides={true} // 슬라이드가 항상 중앙에 위치
-        pagination={{ clickable: true }} // 페이지네이션 사용
-        style={{ width: '100vw', height: '100vh', position: 'absolute', top: 0, left: 0 }}
-      >
-        <SwiperSlide>
-          <img
-            src="/image1.jpg"
-            alt="Slide 1"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }} // 이미지가 화면 전체를 덮도록 설정
-          />
-        </SwiperSlide>
-        <SwiperSlide>
-          <img
-            src="/image2.jpg"
-            alt="Slide 2"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        </SwiperSlide>
-        <SwiperSlide>
-          <img
-            src="/image3.jpg"
-            alt="Slide 3"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        </SwiperSlide>
-        <SwiperSlide>
-          <img
-            src="/image4.jpg"
-            alt="Slide 4"
-            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-          />
-        </SwiperSlide>
-      </Swiper>
-
-      {/* Material UI SpeedDial */}
-      <SpeedDial
-        ariaLabel="SpeedDial basic example"
-        sx={{ position: 'absolute', bottom: 16, right: 16 }}
-        icon={<SpeedDialIcon />}
-      >
-        {actions.map((action) => (
-          <SpeedDialAction
-            key={action.name}
-            icon={action.icon}
-            tooltipTitle={action.name}
-          />
-        ))}
-      </SpeedDial>
-
-      <FileUploader />
+    <div className="w-full h-max flex justify-center items-center">
+      <ImageListComponent imageDatas={itemData}/>
     </div>
   );
 }
