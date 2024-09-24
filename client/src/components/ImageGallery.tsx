@@ -2,9 +2,9 @@
 
 import React from 'react';
 
-interface ImageGalleryProps {
+type ImageGalleryProps = {
   images: string[];
-}
+};
 
 export default function ImageGallery({ images }: ImageGalleryProps) {
   return (

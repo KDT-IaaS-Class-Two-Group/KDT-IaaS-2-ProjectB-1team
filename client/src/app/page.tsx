@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import NavBar from '../components/NavBar'; // 네비게이션 바 컴포넌트
-import FileUploadButton from '../components/FileUploader'; // 파일 업로드 버튼 컴포넌트
-import ImageGallery from '../components/ImageGallery'; // 이미지 갤러리 컴포넌트
+import NavBar from '../components/NavBar';
+import ImageGallery from '../components/ImageGallery';
+import FloatingButton from '../components/FileUploader';
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false); // 로딩 상태
   const [images, setImages] = useState<string[]>([]); // 업로드된 이미지들을 저장할 상태
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const controllerRef = useRef<AbortController | null>(null); // 업로드 취소용 AbortController
   const uploadTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 업로드 시뮬레이션 취소용 Timeout Ref
 
@@ -44,20 +45,34 @@ export default function Home() {
     console.log('업로드가 취소되었습니다.');
   };
 
+  // 파일 선택 창 열기
+  const handleIconClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
   return (
     <>
-      {/* 네비게이션 바 */}
       <NavBar />
-      <ImageGallery images={images} />
-      {/* 업로드 버튼 */}
-      <FileUploadButton
+      {/* 네비게이션 바와 겹치지 않게 상단에 패딩 추가 */}
+      <div className="pt-20">
+        <ImageGallery images={images} />
+      </div>
+
+      <FloatingButton
         isLoading={isLoading}
         handleCancelUpload={handleCancelUpload}
-        handleFileChange={handleFileChange}
+        handleIconClick={handleIconClick}
       />
 
-      {/* 업로드된 이미지 갤러리 */}
-      
+      {/* 숨겨진 파일 입력 */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        className="hidden"
+        onChange={handleFileChange}
+      />
     </>
   );
 }
