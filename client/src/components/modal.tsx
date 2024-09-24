@@ -42,7 +42,7 @@ export default function ModalComponent({
 
       if (twoD) {
         // 이미지를 캔버스에 그리기
-        twoD.drawImage(canvasImg, 0, 0);
+        twoD.drawImage(canvasImg, 0, 0, canvas.width, canvas.height);
         // 이름 텍스트 추가
         twoD.font = "bold 24px Arial"; // 폰트 설정
         twoD.fillStyle = "black"; // 텍스트 색상
@@ -61,7 +61,7 @@ export default function ModalComponent({
   };
 
   const shareImage = () => {
-    
+
   }
   return (
     <>
