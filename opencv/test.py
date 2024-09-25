@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 import json
 import os
-import shutil
+from tkinter import ttk
 
 # Mediapipe 얼굴 인식 모델 초기화
 mp_face_mesh = mp.solutions.face_mesh
@@ -67,16 +67,12 @@ def process_image(image_path):
         status = "fail"
         
     # 원하는 저장 폴더 경로 설정
-    if status == "success":
-        json_folder = os.path.join(os.getcwd(), 'successFolder/successJson')
-    else:
-        json_folder = os.path.join(os.getcwd(), 'failFolder/failJson')
+    json_folder = os.path.join(os.getcwd(), 'json')
 
     os.makedirs(json_folder, exist_ok=True)  # 폴더가 없으면 생성
 
     # JSON 파일 이름 설정
-    json_file_name = f"{status}.json"  # 성공 또는 실패에 따라 파일 이름 변경
-    json_file_path = os.path.join(json_folder, json_file_name)
+    json_file_path = os.path.join(json_folder, "integration.json")
 
     # 기존 JSON 파일이 있으면 불러오기
     if os.path.exists(json_file_path):
@@ -87,15 +83,15 @@ def process_image(image_path):
 
     # 이미지 파일 이름을 키로 사용하여 새로운 데이터 추가
     if status == "success":
-        existing_data[f"success_{os.path.basename(image_path)}"] = landmarks_data
+        existing_data[os.path.basename(image_path)] = landmarks_data
     else:
-        existing_data[f"fail_{os.path.basename(image_path)}"] = landmarks_data
+        existing_data[os.path.basename(image_path)] = {}
 
     # 결과를 JSON 파일로 저장
     with open(json_file_path, 'w', encoding='utf-8') as json_file:
         json.dump(existing_data, json_file, ensure_ascii=False)
 
-    # 원하는 폴더 경로 설정
+    # 원하는 폴더 경로 설정``
     if status == "success":
         desired_folder = os.path.join(os.getcwd(), 'successFolder/successImg')
     else:
@@ -104,13 +100,10 @@ def process_image(image_path):
     os.makedirs(desired_folder, exist_ok=True)  # 폴더가 없으면 생성
 
     # 이미지 저장 경로 설정
-    output_image_path = os.path.join(desired_folder, f"{status}_{os.path.basename(image_path)}")
+    output_image_path = os.path.join(desired_folder, os.path.basename(image_path))
     cv2.imwrite(output_image_path, image)  # 처리된 이미지를 저장하는 코드 추가
     
-    # 결과 이미지 출력
-    cv2.imshow('Face Features with Vectors', image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    cv2.destroyAllWindows() # 모든 윈도우 닫기
     messagebox.showinfo("Success", f"Processed data saved to {json_file_path}")
 
 # 파일 열기 함수
@@ -118,13 +111,68 @@ def open_file():
     file_path = filedialog.askopenfilename()
     if file_path:
         process_image(file_path)
+        
+# integration.json 파일 불러오기
+def load_json_data():
+    with open('json/integration.json', 'r') as file:
+        data = json.load(file)
+    return data
+
+# 객체가 비어있는지 확인하는 함수
+def check_success(obj):
+    return "성공" if obj else "실패"
+
+# Treeview 업데이트
+def update_treeview(data):
+    # 기존 항목을 명확히 모두 제거
+    tree.delete(*tree.get_children())  # 모든 항목을 삭제
+    
+    for image_name, details in data.items():
+        success_status = check_success(details)
+        tree.insert("", "end", values=(image_name, success_status))
+
+# 파일 변경 감지 및 업데이트 함수
+def check_for_updates():
+    global last_modified_time
+    current_modified_time = os.path.getmtime('json/integration.json')  # 파일의 마지막 수정 시간 확인
+    
+    if current_modified_time != last_modified_time:
+        last_modified_time = current_modified_time
+        data = load_json_data()
+        update_treeview(data)
+    
+    # 1000ms(1초) 후에 다시 check_for_updates 함수 실행
+    root.after(1000, check_for_updates)
 
 # GUI 설정
 root = tk.Tk()
 root.title("Face Landmark Processor")
-root.geometry("300x150")
+root.geometry("800x500")
 
-open_button = tk.Button(root, text="Select Image", command=open_file)
+open_button = tk.Button(root, text="파일 첨부", command=open_file)
 open_button.pack(expand=True)
+
+# 타이틀 스타일 설정
+style = ttk.Style(root)
+style.configure("Treeview.Heading", font=("Arial", 17, "bold"))  # 열 제목 폰트 크기 설정
+style.configure("Treeview", rowheight=25)  # 행 높이 설정
+
+# Treeview 생성
+tree = ttk.Treeview(root, columns=("Image", "Status"), show="headings", height=15)
+tree.heading("Image", text="이미지 이름")
+tree.heading("Status", text="성공 여부")
+tree.column("Image", width=100, anchor="center")
+tree.column("Status", width=50, anchor="center")
+tree.pack(fill=tk.BOTH, expand=True)
+
+# 데이터 로드 및 리스트 업데이트
+data = load_json_data()
+update_treeview(data)
+
+# 파일의 마지막 수정 시간 저장
+last_modified_time = os.path.getmtime('json/integration.json')
+
+# 주기적으로 파일 변경 감지
+root.after(1000, check_for_updates)  # 1000ms(1초)마다 파일 업데이트 확인
 
 root.mainloop()
