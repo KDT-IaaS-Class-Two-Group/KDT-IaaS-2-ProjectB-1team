@@ -1,11 +1,17 @@
-'use client';
+"use client";
 
-import React, { useState, useRef } from 'react';
-import NavBar from '../components/NavBar';
-import ImageGallery from '../components/ImageGallery';
-import FloatingButton from '../components/FileUploader';
-import { ImageListComponent } from '../components/image_list_component'; // 이미지 리스트 컴포넌트 가져오기
-import ModalComponent from '@/components/modal';
+import React, { useState, useRef } from "react";
+import NavBar from "../components/NavBar";
+import ImageGallery from "../components/ImageGallery";
+import FloatingButton from "../components/FileUploader";
+import { ImageListComponent } from "../components/image_list_component"; // 이미지 리스트 컴포넌트 가져오기
+import ModalComponent from "@/components/modal";
+
+interface DataProps {
+  src: string;
+  title: string;
+  body: string;
+}
 
 export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(false); // 로딩 상태
@@ -14,16 +20,18 @@ export default function Home() {
   const controllerRef = useRef<AbortController | null>(null); // 업로드 취소용 AbortController
   const uploadTimeoutRef = useRef<NodeJS.Timeout | null>(null); // 업로드 시뮬레이션 취소용 Timeout Ref
 
-  const [isOpen, setIsOpen] = useState<boolean>(true);
+  const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  const data = {
+  const [data, setData] = useState<DataProps>({
     src: "https://images.unsplash.com/photo-1597262975002-c5c3b14bbd62",
     title: "도미상",
-    body: "테스트"
-  }
+    body: "테스트",
+  });
 
   // 파일 선택 시 처리하는 함수
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const files = event.target.files;
     if (files && files.length > 0) {
       setIsLoading(true); // 로딩 시작
@@ -32,12 +40,38 @@ export default function Home() {
       // 업로드 요청 취소를 위한 AbortController 생성
       controllerRef.current = new AbortController();
 
-      // 2초 후에 업로드가 완료되는 시뮬레이션
-      uploadTimeoutRef.current = setTimeout(() => {
-        const newImages = fileArray.map((file) => URL.createObjectURL(file)); // 파일 URL 생성
-        setImages((prevImages) => [...prevImages, ...newImages]); // 기존 이미지에 새 이미지 추가
-        setIsLoading(false); // 로딩 완료
-      }, 2000);
+      try {
+        const formData = new FormData();
+        fileArray.forEach((file) => {
+          formData.append("image", file); // 파일을 FormData에 추가
+        });
+
+        // 이미지 처리 요청
+        const res = await fetch("http://0.0.0.0:8000/process-image", {
+          method: "POST",
+          body: formData,
+          signal: controllerRef.current.signal, // 취소 가능하게 설정
+        });
+
+        if (res.ok) {
+          const blob = await res.blob(); // 응답을 Blob으로 받음 (이미지일 경우)
+          const imageUrl = URL.createObjectURL(blob); // Blob을 URL로 변환
+
+          setData({
+            src: imageUrl,
+            title: "변경된 이미지",
+            body: "안녕"
+          })
+
+          setIsOpen(true);
+        } else {
+          console.error("이미지 처리 실패:", res.statusText);
+        }
+      } catch (error) {
+        console.error("이미지 처리 중 오류 발생:", error);
+      } finally {
+        setIsLoading(false); // 로딩 종료
+      }
     }
   };
 
@@ -52,7 +86,7 @@ export default function Home() {
     }
 
     setIsLoading(false); // 로딩 상태 종료
-    console.log('업로드가 취소되었습니다.');
+    console.log("업로드가 취소되었습니다.");
   };
 
   // 파일 선택 창 열기
@@ -67,62 +101,62 @@ export default function Home() {
     {
       img: "https://images.unsplash.com/photo-1549388604-817d15aa0110",
       title: "Bed",
-      text: "이건 침대야"
+      text: "이건 침대야",
     },
     {
       img: "https://images.unsplash.com/photo-1525097487452-6278ff080c31",
       title: "Books",
-      text: "이건 책이야"
+      text: "이건 책이야",
     },
     {
       img: "https://images.unsplash.com/photo-1523413651479-597eb2da0ad6",
       title: "Sink",
-      text: "이건 몰라야"
+      text: "이건 몰라야",
     },
     {
       img: "https://images.unsplash.com/photo-1563298723-dcfebaa392e3",
       title: "Kitchen",
-      text: "이건 부엌이야야"
+      text: "이건 부엌이야야",
     },
     {
       img: "https://images.unsplash.com/photo-1588436706487-9d55d73a39e3",
       title: "Blinds",
-      text: "이건 침대야 침대침야"
+      text: "이건 침대야 침대침야",
     },
     {
       img: "https://images.unsplash.com/photo-1574180045827-681f8a1a9622",
       title: "Chairs",
-      text: "이건 허먼밀러야"
+      text: "이건 허먼밀러야",
     },
     {
       img: "https://images.unsplash.com/photo-1530731141654-5993c3016c77",
       title: "Laptop",
-      text: "이건 맥북야"
+      text: "이건 맥북야",
     },
     {
       img: "https://images.unsplash.com/photo-1481277542470-605612bd2d61",
       title: "Doors",
-      text: "이건 문이야야"
+      text: "이건 문이야야",
     },
     {
       img: "https://images.unsplash.com/photo-1517487881594-2787fef5ebf7",
       title: "Coffee",
-      text: "이건 커피일지도야야"
+      text: "이건 커피일지도야야",
     },
     {
       img: "https://images.unsplash.com/photo-1516455207990-7a41ce80f7ee",
       title: "Storage",
-      text: "이건 저장고일지도야"
+      text: "이건 저장고일지도야",
     },
     {
       img: "https://images.unsplash.com/photo-1597262975002-c5c3b14bbd62",
       title: "Candle",
-      text: "이건 침대야ㅈㄷㄹㄷㅈㄹㄷㅈㄹㄷㅈㄹㅈㄷㄹㅈㄹㅈㄷㄹㅈㄹㅈㄷㄹㅈㄷㄹㄷㅈㄹㄷㅈㄹㄷㅈ"
+      text: "이건 침대야ㅈㄷㄹㄷㅈㄹㄷㅈㄹㄷㅈㄹㅈㄷㄹㅈㄹㅈㄷㄹㅈㄹㅈㄷㄹㅈㄷㄹㄷㅈㄹㄷㅈㄹㄷㅈ",
     },
     {
       img: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4",
       title: "Coffee table",
-      text: "이건 침대야"
+      text: "이건 침대야",
     },
   ];
 
@@ -154,8 +188,13 @@ export default function Home() {
         className="hidden"
         onChange={handleFileChange}
       />
-      <ModalComponent isOpen={isOpen} onOpenChange={() => {setIsOpen((prev) => !prev)}} data={data}/>
+      <ModalComponent
+        isOpen={isOpen}
+        onOpenChange={() => {
+          setIsOpen((prev) => !prev);
+        }}
+        data={data}
+      />
     </>
   );
 }
-
