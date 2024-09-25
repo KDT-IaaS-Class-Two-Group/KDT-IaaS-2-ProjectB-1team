@@ -9,12 +9,12 @@ router = APIRouter()
 @router.post("/upload/")
 async def upload_image(file: UploadFile = File(...)):  #UploadFile은 FastAPI에서 제공하는 클래스 #= File(...): File()은 이 변수가 파일을 담을 것임을 지정
     file_location = save_image(file)  # 이미지를 저장하는 함수 호출
-    return {"filename": file.filename, "file location": file_location}
+    return {"img": file, "text": file_location}
 
-# 이미지 다운로드 엔드포인트
-@router.get("/download/{image_id}")
-async def download_image(image_id: str):
-    file_path = get_image_path(image_id)  # 이미지 경로를 가져오는 함수 호출
-    if not os.path.isfile(file_path):
-        raise HTTPException(status_code=404, detail="Image not found")
-    return FileResponse(file_path)
+# # 이미지 다운로드 엔드포인트
+# @router.get("/download/{image_id}")
+# async def download_image(image_id: str):
+#     file_path = get_image_path(image_id)  # 이미지 경로를 가져오는 함수 호출
+#     if not os.path.isfile(file_path):
+#         raise HTTPException(status_code=404, detail="Image not found")
+#     return FileResponse(file_path)
