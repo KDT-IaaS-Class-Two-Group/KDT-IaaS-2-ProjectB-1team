@@ -1,3 +1,4 @@
+import subprocess
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -41,9 +42,17 @@ async def process_image(image: UploadFile = File(...)):
 app.include_router(image.router)
 
 
-if __name__ == "__main__":
-    import uvicorn
+def create_requirements():
+    """requirements.txt 파일 자동 생성"""
+    print("Generating requirements.txt...")
+    # 현재 디렉토리에 requirements.txt 파일 생성
+    with open('requirements.txt', 'w') as f:
+        subprocess.run(["pip3.8", "freeze"], stdout=f)
 
+if __name__ == "__main__":
+    create_requirements()
+
+    import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
     
     
