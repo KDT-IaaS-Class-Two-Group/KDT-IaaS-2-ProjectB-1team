@@ -80,12 +80,18 @@ def process_image(image_path):
             existing_data = json.load(json_file)
     else:
         existing_data = {}
-
+    
+    counter = 1  # 중복 파일을 위한 카운터 초기화
+    
     # 이미지 파일 이름을 키로 사용하여 새로운 데이터 추가
     if status == "success":
-        existing_data[os.path.basename(image_path)] = landmarks_data
+        key = os.path.basename(image_path)
+        while key in existing_data:
+            counter += 1
+            key = f"{counter}{os.path.basename(image_path)}"
+        existing_data[key] = landmarks_data
     else:
-        existing_data[os.path.basename(image_path)] = {}
+        existing_data[key] = {}
 
     # 결과를 JSON 파일로 저장
     with open(json_file_path, 'w', encoding='utf-8') as json_file:
@@ -99,8 +105,11 @@ def process_image(image_path):
 
     os.makedirs(desired_folder, exist_ok=True)  # 폴더가 없으면 생성
 
+
     # 이미지 저장 경로 설정
     output_image_path = os.path.join(desired_folder, os.path.basename(image_path))
+    while os.path.exists(output_image_path):
+        output_image_path = os.path.join(desired_folder, f"{counter}{os.path.basename(image_path)}")
     cv2.imwrite(output_image_path, image)  # 처리된 이미지를 저장하는 코드 추가
     
     cv2.destroyAllWindows() # 모든 윈도우 닫기
