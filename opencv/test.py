@@ -94,7 +94,7 @@ def process_image(image_path):
 
     # 결과를 JSON 파일로 저장
     with open(json_file_path, 'w', encoding='utf-8') as json_file:
-        json.dump(existing_data, json_file, ensure_ascii=False)
+        json.dump(existing_data, json_file, ensure_ascii=False, indent=4)
 
     # 원하는 폴더 경로 설정``
     if status == "success":
