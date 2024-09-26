@@ -119,6 +119,14 @@ def process_image(image_path):
 # 파일 열기 함수
 def open_file():
     file_path = filedialog.askopenfilename()
+    
+    # 허용되는 파일 확장자 목록
+    valid_extensions = (".jpg", ".jpeg", ".png")
+    # 파일 확장자 확인
+    if not file_path.lower().endswith(valid_extensions):
+        messagebox.showerror("Error", "지원하지 않는 파일 형식입니다.\nJPG, JPEG, PNG 파일만 허용됩니다.")
+        return
+    
     if file_path:
         process_image(file_path)
         
