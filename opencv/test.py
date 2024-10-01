@@ -15,6 +15,28 @@ face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True)
 
 current_image_key = None # 현재 이미지 키를 전역 변수로 설정
 
+# 벡터의 크기, 각도, 정규화된 각도 등을 계산하는 함수
+def calculate_vector_details(start_point, end_point):
+    # 벡터 계산
+    vector = (end_point[0] - start_point[0], end_point[1] - start_point[1])
+    
+    # 벡터의 크기 (Euclidean Distance)
+    magnitude = math.sqrt(vector[0]**2 + vector[1]**2)
+    
+    # 벡터의 각도 (x축과의 각도, 라디안 -> 도)
+    angle_degrees = math.degrees(math.atan2(vector[1], vector[0]))
+    
+    # 각도를 0~360도로 정규화
+    angle_normalized = (angle_degrees + 360) % 360
+    
+    return {
+        'vector': vector,
+        'magnitude': magnitude,
+        'angle_degrees': angle_degrees,
+        'angle_normalized': angle_normalized
+    }
+
+# connections 리스트에서 각 랜드마크를 연결하고 벡터 정보를 계산
 def calculate_vectors(connections, landmarks, width, height):
     vectors = []
     for connection in connections:
@@ -22,6 +44,7 @@ def calculate_vectors(connections, landmarks, width, height):
         start_point = landmarks[start_idx]
         end_point = landmarks[end_idx]
         
+        # 벡터의 세부 정보 계산
         vector_details = calculate_vector_details(start_point, end_point)
         
         # 벡터의 방향을 정규화 (단위 벡터)
@@ -31,31 +54,18 @@ def calculate_vectors(connections, landmarks, width, height):
         else:
             direction = (0, 0)
         
+        # 필요한 값을 모두 포함하는 딕셔너리를 리스트에 추가
         vectors.append({
             'start_idx': start_idx,
             'end_idx': end_idx,
             'vector': vector_details['vector'],
             'magnitude': vector_details['magnitude'],
             'angle_degrees': vector_details['angle_degrees'],
+            'angle_normalized': vector_details['angle_normalized'],
             'direction': direction
         })
+    
     return vectors
-
-def calculate_vector_details(start_point, end_point):
-    # 벡터 계산
-    vector = (end_point[0] - start_point[0], end_point[1] - start_point[1])
-    
-    # 벡터의 크기 (Euclidean Distance)
-    magnitude = math.sqrt(vector[0]**2 + vector[1]**2)
-    
-    # 벡터의 각도 (x축과의 각도, 라디안 -> 도)
-    angle = math.degrees(math.atan2(vector[1], vector[0]))
-    
-    return {
-        'vector': vector,
-        'magnitude': magnitude,
-        'angle_degrees': angle
-    }
 
 def process_image(image_path):
     global current_image_key
@@ -97,8 +107,15 @@ def process_image(image_path):
                 if part_name not in landmarks_data:
                     landmarks_data[part_name] = {'values': []}
 
-                # vectors 값을 'values' 키로 저장
-                landmarks_data[part_name]['values'] = vectors
+                # 'vectors' 리스트에서 필요 없는 start_idx, end_idx를 제외하고 필터링
+                filtered_vectors = [{'vector': vec['vector'],               # 벡터 값 추가
+                     'magnitude': vec['magnitude'],
+                     'angle_degrees': vec['angle_degrees'],  # 각도 값 포함
+                     'angle_normalized': vec['angle_normalized'],
+                     'direction': vec['direction']} for vec in vectors]
+
+                # 벡터의 크기, 각도, 방향만 저장
+                landmarks_data[part_name]['values'] = filtered_vectors
 
                 # 벡터 시각화 (선택 사항)
                 for vec in vectors:
