@@ -282,9 +282,11 @@ def change_file():
                 if 'NOSE' in existing_data[current_image_key]:
                     existing_data[current_image_key]['NOSE']['nose_label'] = nose_label
     
-                if 'EYES' in existing_data[current_image_key]:
-                    existing_data[current_image_key]['LEFT_EYES']['eye_label'] = eye_label
-                    existing_data[current_image_key]['RIGHT_EYES']['eye_label'] = eye_label
+                if 'LEFT_EYE' in existing_data[current_image_key]:
+                    existing_data[current_image_key]['LEFT_EYE']['eye_label'] = eye_label
+                    
+                if 'RIGHT_EYE' in existing_data[current_image_key]:
+                    existing_data[current_image_key]['RIGHT_EYE']['eye_label'] = eye_label
 
                 # 결과를 JSON 파일로 저장
                 with open(json_file_path, 'w', encoding='utf-8') as json_file:
