@@ -7,6 +7,7 @@ from tkinter import filedialog, messagebox
 import json
 import os
 from tkinter import ttk
+import math  # 각도 계산을 위해 추가
 
 # Mediapipe 얼굴 인식 모델 초기화
 mp_face_mesh = mp.solutions.face_mesh
@@ -14,7 +15,48 @@ face_mesh = mp_face_mesh.FaceMesh(static_image_mode=True)
 
 current_image_key = None # 현재 이미지 키를 전역 변수로 설정
 
-# 이미지 처리 함수
+def calculate_vectors(connections, landmarks, width, height):
+    vectors = []
+    for connection in connections:
+        start_idx, end_idx = connection
+        start_point = landmarks[start_idx]
+        end_point = landmarks[end_idx]
+        
+        vector_details = calculate_vector_details(start_point, end_point)
+        
+        # 벡터의 방향을 정규화 (단위 벡터)
+        if vector_details['magnitude'] != 0:
+            direction = (vector_details['vector'][0] / vector_details['magnitude'],
+                         vector_details['vector'][1] / vector_details['magnitude'])
+        else:
+            direction = (0, 0)
+        
+        vectors.append({
+            'start_idx': start_idx,
+            'end_idx': end_idx,
+            'vector': vector_details['vector'],
+            'magnitude': vector_details['magnitude'],
+            'angle_degrees': vector_details['angle_degrees'],
+            'direction': direction
+        })
+    return vectors
+
+def calculate_vector_details(start_point, end_point):
+    # 벡터 계산
+    vector = (end_point[0] - start_point[0], end_point[1] - start_point[1])
+    
+    # 벡터의 크기 (Euclidean Distance)
+    magnitude = math.sqrt(vector[0]**2 + vector[1]**2)
+    
+    # 벡터의 각도 (x축과의 각도, 라디안 -> 도)
+    angle = math.degrees(math.atan2(vector[1], vector[0]))
+    
+    return {
+        'vector': vector,
+        'magnitude': magnitude,
+        'angle_degrees': angle
+    }
+
 def process_image(image_path):
     global current_image_key
     # 이미지 불러오기
@@ -26,7 +68,8 @@ def process_image(image_path):
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # 얼굴 랜드마크 탐지
-    results = face_mesh.process(rgb_image)
+    with mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True) as face_mesh:
+        results = face_mesh.process(rgb_image)
 
     # 랜드마크 연결부위 가져오기
     LEFT_EYE = mp_face_mesh.FACEMESH_LEFT_EYE
@@ -44,83 +87,79 @@ def process_image(image_path):
             h, w, _ = image.shape
             landmarks = np.array([(landmark.x * w, landmark.y * h) for landmark in face_landmarks.landmark])
 
-            # 벡터 값 출력 함수
-            def draw_and_print_vector(start_idx, end_idx, landmarks, part_name):
-                start_point = landmarks[start_idx]
-                end_point = landmarks[end_idx]
-                vector = (end_point[0] - start_point[0], end_point[1] - start_point[1])
-                # 객체 키를 부위 이름으로 설정
+            # 각 부위별 벡터 계산 및 저장
+            for part_name, connections in [('LEFT_EYE', LEFT_EYE),
+                                           ('RIGHT_EYE', RIGHT_EYE),
+                                           ('NOSE', NOSE),
+                                           ('LIPS', LIPS),
+                                           ('FACE_OVAL', FACE_OVAL)]:
+                vectors = calculate_vectors(connections, landmarks, w, h)
                 if part_name not in landmarks_data:
-                    landmarks_data[part_name] = {'value': []}
-                landmarks_data[part_name]['value'].append(vector)  # 해당 부위 이름에 벡터 값 추가
-                cv2.line(image, tuple(map(int, start_point)), tuple(map(int, end_point)), (0, 255, 0), 1)
+                    landmarks_data[part_name] = {'values': []}
 
-            # 각 부위별로 연결선 및 벡터 출력
-            for connection in LEFT_EYE:
-                draw_and_print_vector(connection[0], connection[1], landmarks, 'LEFT_EYE')
-            for connection in RIGHT_EYE:
-                draw_and_print_vector(connection[0], connection[1], landmarks, 'RIGHT_EYE')
-            for connection in NOSE:
-                draw_and_print_vector(connection[0], connection[1], landmarks, 'NOSE')
-            for connection in LIPS:
-                draw_and_print_vector(connection[0], connection[1], landmarks, 'LIPS')
-            for connection in FACE_OVAL:
-                draw_and_print_vector(connection[0], connection[1], landmarks, 'FACE_OVAL')
+                # vectors 값을 'values' 키로 저장
+                landmarks_data[part_name]['values'] = vectors
 
-        # 성공적으로 랜드마크를 탐지한 경우
+                # 벡터 시각화 (선택 사항)
+                for vec in vectors:
+                    start_pt = tuple(map(int, landmarks[vec['start_idx']]))
+                    end_pt = tuple(map(int, landmarks[vec['end_idx']]))
+                    cv2.line(image, start_pt, end_pt, (0, 255, 0), 1)
+                    # 시작점과 끝점에 작은 원 표시 (선택 사항)
+                    cv2.circle(image, start_pt, 1, (255, 0, 0), -1)
+                    cv2.circle(image, end_pt, 1, (0, 0, 255), -1)
+
         status = "success"
     else:
-        # 랜드마크 탐지 실패한 경우
         status = "fail"
-                
-    # 원하는 저장 폴더 경로 설정
-    json_folder = os.path.join(os.getcwd(), 'json')
-    os.makedirs(json_folder, exist_ok=True)  # 폴더가 없으면 생성
 
-    # JSON 파일 이름 설정
+    # JSON 저장 경로 설정
+    json_folder = os.path.join(os.getcwd(), 'json')
+    os.makedirs(json_folder, exist_ok=True)
+
     json_file_path = os.path.join(json_folder, "integration.json")
 
-    # 기존 JSON 파일이 있으면 불러오기
+    # 기존 JSON 파일 불러오기
     if os.path.exists(json_file_path):
-        with open(json_file_path, 'r') as json_file:
+        with open(json_file_path, 'r', encoding='utf-8') as json_file:
             existing_data = json.load(json_file)
     else:
         existing_data = {}
-    
+
     counter = 1  # 중복 파일을 위한 카운터 초기화
-    
+
     # 이미지 파일 이름을 키로 사용하여 새로운 데이터 추가
     key = os.path.basename(image_path)
     if status == "success":
         while key in existing_data:
             counter += 1
-            key = f"{counter}{os.path.basename(image_path)}"
+            key = f"{counter}_{os.path.basename(image_path)}"
         existing_data[key] = landmarks_data
     else:
         existing_data[key] = {}
 
-    # 결과를 JSON 파일로 저장
+    # 결과를 JSON 파일으로 저장
     with open(json_file_path, 'w', encoding='utf-8') as json_file:
         json.dump(existing_data, json_file, ensure_ascii=False, indent=4)
 
+    # 데이터 로드 및 UI 업데이트 (함수 정의 필요)
     data = load_json_data()
     update_treeview(data)
 
-    # 원하는 폴더 경로 설정``
+    # 이미지 저장 폴더 설정
     if status == "success":
-        desired_folder = os.path.join(os.getcwd(), 'successFolder/successImg')
+        desired_folder = os.path.join(os.getcwd(), 'successFolder', 'successImg')
     else:
-        desired_folder = os.path.join(os.getcwd(), 'failFolder/failImg')
-    os.makedirs(desired_folder, exist_ok=True)  # 폴더가 없으면 생성
-
+        desired_folder = os.path.join(os.getcwd(), 'failFolder', 'failImg')
+    os.makedirs(desired_folder, exist_ok=True)
 
     # 이미지 저장 경로 설정
     output_image_path = os.path.join(desired_folder, os.path.basename(image_path))
     while os.path.exists(output_image_path):
-        output_image_path = os.path.join(desired_folder, f"{counter}{os.path.basename(image_path)}")
-    cv2.imwrite(output_image_path, image)  # 처리된 이미지를 저장하는 코드 추가
-    
-    cv2.destroyAllWindows() # 모든 윈도우 닫기
+        output_image_path = os.path.join(desired_folder, f"{counter}_{os.path.basename(image_path)}")
+    cv2.imwrite(output_image_path, image)
+
+    cv2.destroyAllWindows()
     messagebox.showinfo("Success", f"Processed data saved to {json_file_path}")
     return image
 
