@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+from PIL import Image, ImageTk
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import json
@@ -48,12 +49,10 @@ def process_image(image_path):
                 start_point = landmarks[start_idx]
                 end_point = landmarks[end_idx]
                 vector = (end_point[0] - start_point[0], end_point[1] - start_point[1])
-                # landmarks_data[f"{part_name}_{start_idx}_{end_idx}"] = vector
-                # cv2.line(image, tuple(map(int, start_point)), tuple(map(int, end_point)), (0, 255, 0), 1)
                 # 객체 키를 부위 이름으로 설정
                 if part_name not in landmarks_data:
-                    landmarks_data[part_name] = []
-                landmarks_data[part_name].append(vector)  # 해당 부위 이름에 벡터 값 추가
+                    landmarks_data[part_name] = {'value': []}
+                landmarks_data[part_name]['value'].append(vector)  # 해당 부위 이름에 벡터 값 추가
                 cv2.line(image, tuple(map(int, start_point)), tuple(map(int, end_point)), (0, 255, 0), 1)
 
             # 각 부위별로 연결선 및 벡터 출력
@@ -65,7 +64,7 @@ def process_image(image_path):
                 draw_and_print_vector(connection[0], connection[1], landmarks, 'NOSE')
             for connection in LIPS:
                 draw_and_print_vector(connection[0], connection[1], landmarks, 'LIPS')
-            # for connection in FACE_OVAL:
+            for connection in FACE_OVAL:
                 draw_and_print_vector(connection[0], connection[1], landmarks, 'FACE_OVAL')
 
         # 성공적으로 랜드마크를 탐지한 경우
@@ -73,7 +72,7 @@ def process_image(image_path):
     else:
         # 랜드마크 탐지 실패한 경우
         status = "fail"
-        
+                
     # 원하는 저장 폴더 경로 설정
     json_folder = os.path.join(os.getcwd(), 'json')
     os.makedirs(json_folder, exist_ok=True)  # 폴더가 없으면 생성
@@ -123,6 +122,7 @@ def process_image(image_path):
     
     cv2.destroyAllWindows() # 모든 윈도우 닫기
     messagebox.showinfo("Success", f"Processed data saved to {json_file_path}")
+    return image
 
 # 라벨링 선택 함수
 def label_image(label):
@@ -142,24 +142,24 @@ def label_image(label):
     with open(json_file_path, 'r', encoding='utf-8') as json_file:
         existing_data = json.load(json_file)
     
-    # 선택한 라벨을 추가
-    if current_image_key in existing_data:
-        existing_data[current_image_key]['lip_label'] = label
-    else:
-        # 중복 처리된 이미지 키를 찾기
-        for key in existing_data.keys():
-            if key.startswith(os.path.basename(current_image_key)):
-                existing_data[key]['lip_label'] = label
-                break
-        else:
-            messagebox.showerror("Error", "이미지 키가 존재하지 않습니다.")
-            return
+    # # 선택한 라벨을 추가
+    # if current_image_key in existing_data:
+    #     existing_data[current_image_key]['lip_label'] = label
+    # else:
+    #     # 중복 처리된 이미지 키를 찾기
+    #     for key in existing_data.keys():
+    #         if key.startswith(os.path.basename(current_image_key)):
+    #             existing_data[key]['lip_label'] = label
+    #             break
+    #     else:
+    #         messagebox.showerror("Error", "이미지 키가 존재하지 않습니다.")
+    #         return
 
-    # 결과를 JSON 파일로 저장
-    with open(json_file_path, 'w', encoding='utf-8') as json_file:
-        json.dump(existing_data, json_file, ensure_ascii=False, indent=4)
+    # # 결과를 JSON 파일로 저장
+    # with open(json_file_path, 'w', encoding='utf-8') as json_file:
+    #     json.dump(existing_data, json_file, ensure_ascii=False, indent=4)
 
-    messagebox.showinfo("Success", f"{label} 라벨이 저장되었습니다.")
+    # messagebox.showinfo("Success", f"{label} 라벨이 저장되었습니다.")
 
 
 # 파일 열기 함수
@@ -175,9 +175,29 @@ def open_file():
         return
     
     if file_path:
-        process_image(file_path)
         current_image_key = os.path.basename(file_path)
+        origin_img = cv2.imread(file_path)
+        # 이미지 크기 조정
+        resized_origin_img = cv2.resize(origin_img, (200, 200))
+        # 왼족 이미지 박스에 원본 이미지 표시
+        display_image(left_image_label, resized_origin_img)
+        # 파일 저장 경로 설정
+        save_folder = os.path.join(os.getcwd(), 'saved_images')  # 저장할 폴더
+        os.makedirs(save_folder, exist_ok=True)  # 폴더가 없으면 생성
         
+        # 이미지 저장
+        save_path = os.path.join(save_folder, current_image_key)
+        cv2.imwrite(save_path, origin_img)  # 원본 이미지를 저장
+        messagebox.showinfo("Success", f"Image saved to {save_path}")
+        
+# Tkinter 레이블에 이미지 표시 함수
+def display_image(label, img):
+    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    img_pil = Image.fromarray(img_rgb)
+    img_tk = ImageTk.PhotoImage(image=img_pil)
+    label.config(image=img_tk)
+    label.image = img_tk  # 이미지 참조를 유지
+    
 # integration.json 파일 불러오기
 def load_json_data():
     try:
@@ -231,11 +251,48 @@ def check_for_updates():
 
 def change_file():
     global current_image_key
+    # 랜드마크 이미지 처리
+    if current_image_key:  # 현재 이미지 키가 설정되어 있을 때만 처리
+        # save_path 변수에 저장할 경로 설정
+        save_path = os.path.join(os.getcwd(), 'saved_images', current_image_key)  # 원하는 경로로 설정
+        # 이미지 경로를 이용해 랜드마크를 처리
+        processed_image = process_image(save_path)  # process_image에 save_path 전달
+        if processed_image is not None:  # 이미지가 성공적으로 처리되었을 경우에만
+            resized_landmark_img = cv2.resize(processed_image, (200, 200))  # 이미지 크기 조정
+            display_image(right_image_label, resized_landmark_img)  # 오른쪽 이미지 박스에 표시
+            # 선택한 라벨을 가져오기
+            lip_label = lip_var.get()  # 입술 라벨
+            face_label = face_var.get()  # 얼굴형 라벨
+            eye_label = eye_var.get()   # 눈 라
+            nose_label = nose_var.get()  # 코 라벨
 
+            # 기존 JSON 데이터 로드
+            json_file_path = os.path.join(os.getcwd(), 'json', "integration.json")
+            with open(json_file_path, 'r', encoding='utf-8') as json_file:
+                existing_data = json.load(json_file)
+
+            # 선택한 라벨 추가
+            if current_image_key in existing_data:
+                if 'LIPS' in existing_data[current_image_key]:
+                    existing_data[current_image_key]['LIPS']['lip_label'] = lip_label
+    
+                if 'FACE_OVAL' in existing_data[current_image_key]:
+                    existing_data[current_image_key]['FACE_OVAL']['face_label'] = face_label
+    
+                if 'NOSE' in existing_data[current_image_key]:
+                    existing_data[current_image_key]['NOSE']['nose_label'] = nose_label
+    
+                if 'EYES' in existing_data[current_image_key]:
+                    existing_data[current_image_key]['LEFT_EYES']['eye_label'] = eye_label
+                    existing_data[current_image_key]['RIGHT_EYES']['eye_label'] = eye_label
+
+                # 결과를 JSON 파일로 저장
+                with open(json_file_path, 'w', encoding='utf-8') as json_file:
+                    json.dump(existing_data, json_file, ensure_ascii=False, indent=4)
 # GUI 설정
 root = tk.Tk()
 root.title("Face Landmark Processor")
-root.geometry("800x500")
+root.geometry("1200x900")
 
 # Header 프레임
 header_frame = tk.Frame(root)
@@ -282,12 +339,14 @@ image_frame = tk.Frame(root)
 image_frame.pack(pady=20)
 
 # 왼쪽 이미지 박스
-left_image_label = tk.Label(image_frame, width="50", bg="gray")
+left_image_label = tk.Label(image_frame, bg="gray")
+left_image_label.place(x=10, y=10, width=300, height=300)
 left_image_label.pack(side=tk.LEFT, padx=10)
 
 # 오른쪽 이미지 박스
-right_image_label = tk.Label(image_frame, width="50", bg="gray")
-right_image_label.pack(side=tk.LEFT, padx=10)
+right_image_label = tk.Label(image_frame, bg="gray")
+right_image_label.place(x=220, y=10, width=300, height=300)
+right_image_label.pack(side=tk.RIGHT, padx=10)
 
 # 타이틀 스타일 설정
 style = ttk.Style(root)
@@ -295,13 +354,13 @@ style.configure("Treeview.Heading", font=("Arial", 17, "bold"))  # 열 제목 �
 style.configure("Treeview", rowheight=25)  # 행 높이 설정
 
 # Treeview 생성
-tree = ttk.Treeview(root, columns=("Image", "Status"), show="headings", height=15)
+tree = ttk.Treeview(root, columns=("Image", "Status", "Label"), show="headings", height=15)
 tree.heading("Image", text="이미지 이름")
 tree.heading("Status", text="성공 여부")
-# tree.heading("Label", text="라벨")
+tree.heading("Label", text="라벨")
 tree.column("Image", width=100, anchor="center")
 tree.column("Status", width=50, anchor="center")
-# tree.column("Label", width=50, anchor="center")
+tree.column("Label", width=50, anchor="center")
 tree.pack(fill=tk.BOTH, expand=True)
 
 # 데이터 로드 및 리스트 업데이트
