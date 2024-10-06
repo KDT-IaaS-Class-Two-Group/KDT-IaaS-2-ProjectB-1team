@@ -138,6 +138,30 @@ def process_image(image_path):
             cv2.line(image, tuple(map(int, left_eye_start)), tuple(map(int, left_eye_end)), (255, 0, 0), 1)  # 선 그리기
             left_angle_info = calculate_vector_details(left_eye_start, left_eye_end)  # 각도 계산
             print(f"왼쪽 눈 각도: {left_angle_info['angle_degrees']:.2f}도")  # 각도 출력
+            # 눈의 크기 계산
+            eye_width = np.linalg.norm(np.array(left_eye_end) - np.array(left_eye_start))  # 눈 너비 계산
+            print(f"왼쪽 눈 너비: {eye_width:.2f} 픽셀")  # 너비 출력
+            
+            # 눈 위쪽과 아래쪽 랜드마크 인덱스
+            left_eye_top = landmarks[159]  # 눈 위쪽 좌표
+            left_eye_bottom = landmarks[145]  # 눈 아래쪽 좌표
+
+            # 눈 위쪽과 아래쪽에 점 추가
+            cv2.circle(image, tuple(map(int, left_eye_top)), 2, (0, 255, 0), -1)  # 눈 위쪽에 점
+            cv2.circle(image, tuple(map(int, left_eye_bottom)), 2, (255, 0, 255), -1)  # 눈 아래쪽에 점
+
+            # 위쪽과 아래쪽 선 그리기
+            cv2.line(image, tuple(map(int, left_eye_top)), tuple(map(int, left_eye_bottom)), (0, 255, 255), 1)  # 선 그리기
+
+            # 위쪽과 아래쪽의 거리 계산
+            vertical_distance = np.linalg.norm(left_eye_top - left_eye_bottom)  # 거리 계산
+            print(f"왼쪽 눈의 위쪽과 아래쪽 거리: {vertical_distance:.2f}픽셀")  # 거리 출력
+
+            # RIGHT_EYE의 랜드마크 인덱스는 362와 263
+            # right_eye_start = landmarks[362]
+            # right_eye_end = landmarks[263]
+            # cv2.circle(image, tuple(map(int, right_eye_start)), 2, (0, 255, 255), -1)  # 눈 앞머리에 점
+            # cv2.circle(image, tuple(map(int, right_eye_end)), 2, (255, 255, 0), -1)    # 눈 뒷꼬리에 점
             
         status = "success"
     else:
