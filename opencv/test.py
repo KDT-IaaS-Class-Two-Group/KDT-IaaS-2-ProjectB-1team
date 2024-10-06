@@ -125,7 +125,20 @@ def process_image(image_path):
                     # 시작점과 끝점에 작은 원 표시 (선택 사항)
                     cv2.circle(image, start_pt, 1, (255, 0, 0), -1)
                     cv2.circle(image, end_pt, 1, (0, 0, 255), -1)
-
+                    
+            # 눈 앞머리와 뒷꼬리에 점 추가
+            # LEFT_EYE의 랜드마크 인덱스는 33과 133
+            left_eye_start = landmarks[33]
+            left_eye_end = landmarks[133]
+            cv2.circle(image, tuple(map(int, left_eye_start)), 2, (0, 255, 255), -1)  # 눈 앞머리에 점
+            cv2.circle(image, tuple(map(int, left_eye_end)), 2, (255, 255, 0), -1)    # 눈 뒷꼬리에 점
+            
+            # 선 그리기 및 각도 계산
+            # 왼쪽 눈
+            cv2.line(image, tuple(map(int, left_eye_start)), tuple(map(int, left_eye_end)), (255, 0, 0), 1)  # 선 그리기
+            left_angle_info = calculate_vector_details(left_eye_start, left_eye_end)  # 각도 계산
+            print(f"왼쪽 눈 각도: {left_angle_info['angle_degrees']:.2f}도")  # 각도 출력
+            
         status = "success"
     else:
         status = "fail"
