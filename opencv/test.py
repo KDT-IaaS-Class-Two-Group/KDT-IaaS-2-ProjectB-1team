@@ -162,7 +162,60 @@ def process_image(image_path):
             # right_eye_end = landmarks[263]
             # cv2.circle(image, tuple(map(int, right_eye_start)), 2, (0, 255, 255), -1)  # 눈 앞머리에 점
             # cv2.circle(image, tuple(map(int, right_eye_end)), 2, (255, 255, 0), -1)    # 눈 뒷꼬리에 점
+            # 코 길이 계산
+            nose_tip = landmarks[168]
+            nose_base = landmarks[2]
+
+            # 코 길이 계산
+            nose_length = np.linalg.norm(nose_tip - nose_base)  # 길이 계산
+            print(f"코 길이: {nose_length:.2f}픽셀")  # 길이 출력
+
+            # 코 끝과 시작에 점 찍기
+            cv2.circle(image, tuple(map(int, nose_tip)), 3, (0, 255, 0), -1)  # 코 끝에 점
+            cv2.circle(image, tuple(map(int, nose_base)), 3, (255, 0, 0), -1)  # 코 시작에 점
             
+            # 위쪽과 아래쪽 선 그리기
+            cv2.line(image, tuple(map(int, left_eye_top)), tuple(map(int, left_eye_bottom)), (0, 255, 255), 1)  # 선 그리기
+            
+            # # 코의 양쪽 끝 인덱스
+            # left_nostril = landmarks[48]  # 왼쪽 콧볼
+            # right_nostril = landmarks[278]  # 오른쪽 콧볼
+
+            # # 두 점에 점 찍기
+            # cv2.circle(image, tuple(map(int, left_nostril)), 3, (0, 255, 0), -1)  # 왼쪽 콧볼에 점
+            # cv2.circle(image, tuple(map(int, right_nostril)), 3, (255, 0, 0), -1)  # 오른쪽 콧볼에 점
+
+            # # 코 양쪽 끝 간의 거리 계산
+            
+            # nostril_distance = np.linalg.norm(left_nostril - right_nostril)  # 거리 계산
+            # print(f"코 양쪽 끝 거리: {nostril_distance:.2f}픽셀")  # 거리 출력
+            
+            # # # 입술 중앙 좌표
+            # # lip_center = landmarks[62]  # 입술 중앙 좌표
+
+            # # # 왼쪽 입꼬리와 오른쪽 입꼬리 좌표
+            # # left_corner = landmarks[48]  # 왼쪽 입꼬리
+            # # right_corner = landmarks[54]  # 오른쪽 입꼬리
+
+            # # # 각도 계산 함수
+            # # def calculate_angle(point1, point2):
+            # #     delta_x = point2[0] - point1[0]
+            # #     delta_y = point2[1] - point1[1]
+            # #     angle_rad = np.arctan2(delta_y, delta_x)  # 라디안으로 각도 계산
+            # #     angle_deg = np.degrees(angle_rad)  # 도로 변환
+            # #     return angle_deg
+
+            # # # 왼쪽 입꼬리와 중앙의 각도 계산
+            # # left_angle = calculate_angle(lip_center,    left_corner)
+            # # print(f"왼쪽 입꼬리 각도: {left_angle:.2f}도")
+
+            # # # # 오른쪽 입꼬리와 중앙의 각도 계산
+            # # # right_angle = calculate_angle(lip_center, right_corner)
+            # # # print(f"오른쪽 입꼬리 각도: {right_angle:.2f}도"
+            # # # 입술 중앙과 입꼬리에 점 찍기
+            # # cv2.circle(image, tuple(map(int, lip_center)), 3, (255, 255, 0), -1)  # 입술 중앙
+            # # cv2.circle(image, tuple(map(int, left_corner)), 3, (255, 0, 255), -1)  # 왼쪽 입꼬리
+            # # cv2.circle(image, tuple(map(int, right_corner)), 3, (0, 255, 255), -1)  # 오른쪽 입꼬리
         status = "success"
     else:
         status = "fail"
