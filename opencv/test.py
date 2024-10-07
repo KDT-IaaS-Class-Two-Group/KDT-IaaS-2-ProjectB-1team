@@ -199,18 +199,34 @@ def process_image(image_path):
             # right_corner = landmarks[54]  # 오른쪽 입꼬리
 
             # 각도 계산 함수
-            def calculate_angle(point1, point2):
+            # def calculate_angle(point1, point2):
+            #     delta_x = point2[0] - point1[0]
+            #     delta_y = point2[1] - point1[1]
+            #     angle_rad = np.arctan2(delta_y, delta_x)  # 라디안으로 각도 계산
+            #     angle_deg = np.degrees(angle_rad)  # 도로 변환
+            #     # 수평선 기준으로 각도 조정 (0~360도 범위)
+            #     if angle_deg < 0:
+            #         angle_deg += 360
+            #     return angle_deg
+            #  수평선을 0도로 설정하고 각도 계산하는 함수
+            # 수평선을 0도로 설정하고 각도 계산하는 함수
+            def calculate_custom_angle(point1, point2):
                 delta_x = point2[0] - point1[0]
                 delta_y = point2[1] - point1[1]
-                angle_rad = np.arctan2(delta_y, delta_x)  # 라디안으로 각도 계산
-                angle_deg = np.degrees(angle_rad)  # 도로 변환
-                # 수평선 기준으로 각도 조정 (0~360도 범위)
-                if angle_deg < 0:
-                    angle_deg += 360
-                return angle_deg
+                angle_rad = np.arctan2(delta_y, delta_x)  # 라디안 각도 계산
+                angle_deg = np.degrees(angle_rad)  # 도 단위로 변환
+
+                # 각도를 0도 기준으로 맞춤 (수평선이 0도)
+                if angle_deg > 90:
+                    angle_deg = 180 - angle_deg  # 수평선을 넘어가는 경우 변환
+                elif angle_deg < -90:
+                    angle_deg = -180 - angle_deg  # 수평선 아래로 내려가는 경우 변환
+
+                return angle_deg  # 각도 반환
+
 
             # 왼쪽 입꼬리와 중앙의 각도 계산
-            left_angle = calculate_angle(lip_center,    left_corner)
+            left_angle = calculate_custom_angle(lip_center, left_corner)
             print(f"왼쪽 입꼬리 각도: {left_angle:.2f}도")
 
             # # 오른쪽 입꼬리와 중앙의 각도 계산
