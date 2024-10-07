@@ -189,13 +189,16 @@ def process_image(image_path):
 
             # 코 양쪽 끝 간의 거리 계산
             nostril_distance = np.linalg.norm(left_nostril - right_nostril)  # 거리 계산
-            print(f"코 양쪽 끝 거리: {nostril_distance:.2f}픽셀")  # 거리 출력
+            print(f"코 양쪽 끝 거리: {nostril_distance:.1f}픽셀")  # 거리 출력
             
             # 입술 중앙 좌표
-            lip_center = landmarks[13]  # 입술 중앙 좌표
-
+            lipup_center = landmarks[13]  # 윗 입술 중앙 좌표
+            lipdown_center = landmarks[14]  # 아랫 입술 중앙 좌표
+            
             # 왼쪽 입꼬리와 오른쪽 입꼬리 좌표
             left_corner = landmarks[62]  # 왼쪽 입꼬리
+            lip_up = landmarks[0] # 윗 입술
+            lip_down = landmarks[17] # 아랫 입술
             # right_corner = landmarks[54]  # 오른쪽 입꼬리
 
             # 각도 계산 함수
@@ -221,22 +224,32 @@ def process_image(image_path):
                     angle_deg = 180 - angle_deg  # 수평선을 넘어가는 경우 변환
                 elif angle_deg < -90:
                     angle_deg = -180 - angle_deg  # 수평선 아래로 내려가는 경우 변환
-
                 return angle_deg  # 각도 반환
 
-
             # 왼쪽 입꼬리와 중앙의 각도 계산
-            left_angle = calculate_custom_angle(lip_center, left_corner)
-            print(f"왼쪽 입꼬리 각도: {left_angle:.2f}도")
+            left_angle = calculate_custom_angle(lipup_center, left_corner)
+            print(f"왼쪽 입꼬리 각도: {left_angle:.1f}도")
 
-            # # 오른쪽 입꼬리와 중앙의 각도 계산
+            # 오른쪽 입꼬리와 중앙의 각도 계산
             # right_angle = calculate_angle(lip_center, right_corner)
             # print(f"오른쪽 입꼬리 각도: {right_angle:.2f}도"
             # 입술 중앙과 입꼬리에 점 찍기
-            cv2.circle(image, tuple(map(int, lip_center)), 3, (255, 255, 0), -1)  # 입술 중앙
-            cv2.circle(image, tuple(map(int, left_corner)), 3, (255, 0, 255), -1)  # 왼쪽 입꼬리
-            # cv2.circle(image, tuple(map(int, right_corner)), 3, (0, 255, 255), -1)  # 오른쪽 입꼬리
-            cv2.line(image, tuple(map(int, lip_center)), tuple(map(int, left_corner)), (0, 255, 255), 1)  # 선 그리기
+            cv2.circle(image, tuple(map(int, lipup_center)), 3, (255, 255, 0), -1)  # 윗 입술 중앙 점
+            cv2.circle(image, tuple(map(int, left_corner)), 3, (255, 0, 255), -1)  # 왼쪽 입꼬리 점
+            cv2.circle(image, tuple(map(int, lip_up)), 3, (0, 255, 255), -1)  # 윗 입술 점
+            cv2.circle(image, tuple(map(int, lip_down)), 3, (0, 255, 255), -1)  # 아랫 입술 점
+            cv2.circle(image, tuple(map(int, lipdown_center)), 3, (0, 255, 255), -1)  # 아랫 입술 중앙 점
+            
+            cv2.line(image, tuple(map(int, lipup_center)), tuple(map(int, left_corner)), (0, 255, 255), 1)  # 입꼬리 선
+            cv2.line(image, tuple(map(int, lipup_center)), tuple(map(int, lip_up)), (0, 255, 255), 1)  # 윗 입술 선
+            cv2.line(image, tuple(map(int, lipdown_center)), tuple(map(int, lip_down)), (0, 255, 255), 1)  # 아랫 입술 선
+            
+            lipup_distance = np.linalg.norm(lip_up - lipup_center)
+            lipdown_distance = np.linalg.norm(lipdown_center - lip_down)
+            lipall_distance = lipup_distance+lipdown_distance
+            print(f"윗입술길이{lipup_distance:.1f} 아랫입술길이{lipdown_distance:.1f}")
+            print(f"{lipall_distance:.1f}")
+            
         status = "success"
     else:
         status = "fail"
