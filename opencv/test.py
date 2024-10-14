@@ -17,9 +17,13 @@ current_image_key = None  # 현재 이미지 키를 전역 변수로 설정
 
 # 벡터의 크기, 각도, 정규화된 각도 등을 계산하는 함수
 def calculate_vector_details(start_point, end_point):
+    # 벡터 계산
     vector = (end_point[0] - start_point[0], end_point[1] - start_point[1])
+    # 벡터의 크기 (Euclidean Distance)
     magnitude = math.sqrt(vector[0] ** 2 + vector[1] ** 2)
+    # 벡터의 각도 (x축과의 각도, 라디안 -> 도)
     angle_degrees = math.degrees(math.atan2(vector[1], vector[0]))
+    # 각도를 0~360도로 정규화
     angle_normalized = (angle_degrees + 360) % 360
     return {
         'vector': vector,
@@ -36,14 +40,17 @@ def calculate_vectors(connections, landmarks, width, height):
         start_point = landmarks[start_idx]
         end_point = landmarks[end_idx]
 
+        # 벡터의 세부 정보 계산
         vector_details = calculate_vector_details(start_point, end_point)
 
+        # 벡터의 방향을 정규화 (단위 벡터)
         if vector_details['magnitude'] != 0:
             direction = (vector_details['vector'][0] / vector_details['magnitude'],
                          vector_details['vector'][1] / vector_details['magnitude'])
         else:
             direction = (0, 0)
 
+        # 필요한 값을 모두 포함하는 딕셔너리를 리스트에 추가
         vectors.append({
             'start_idx': start_idx,
             'end_idx': end_idx,
@@ -59,6 +66,7 @@ def calculate_vectors(connections, landmarks, width, height):
 # 이미지 처리 함수
 def process_image(image_path):
     global current_image_key
+    # 이미지 불러오기
     image = cv2.imread(image_path)
     if image is None:
         messagebox.showerror("Error", "Could not load image.")
@@ -66,17 +74,20 @@ def process_image(image_path):
 
     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
+    # 얼굴 랜드마크 탐지
     with mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True) as face_mesh:
         results = face_mesh.process(rgb_image)
 
+    # 랜드마크 좌표 저장 리스트
     landmarks_data = {}
-    status = "fail"
 
+    # 랜드마크 좌표 추출 및 그리기
     if results.multi_face_landmarks:
         for face_landmarks in results.multi_face_landmarks:
             h, w, _ = image.shape
             landmarks = np.array([(landmark.x * w, landmark.y * h) for landmark in face_landmarks.landmark])
 
+            # 각 부위별 벡터 계산 및 저장
             for part_name, connections in [
                 ('LEFT_EYE', mp_face_mesh.FACEMESH_LEFT_EYE),
                 ('RIGHT_EYE', mp_face_mesh.FACEMESH_RIGHT_EYE),
@@ -85,6 +96,7 @@ def process_image(image_path):
                 ('FACE_OVAL', mp_face_mesh.FACEMESH_FACE_OVAL)]:
                 
                 vectors = calculate_vectors(connections, landmarks, w, h)
+                # 'vectors' 리스트에서 필요 없는 start_idx, end_idx를 제외하고 필터링
                 landmarks_data[part_name] = {'values': [
                     {'vector': vec['vector'],
                      'magnitude': vec['magnitude'],
@@ -92,38 +104,118 @@ def process_image(image_path):
                      'angle_normalized': vec['angle_normalized'],
                      'direction': vec['direction']} for vec in vectors]}
                 
+                # 벡터 시각화 (선택 사항)
                 for vec in vectors:
                     start_pt = tuple(map(int, landmarks[vec['start_idx']]))
                     end_pt = tuple(map(int, landmarks[vec['end_idx']]))
                     cv2.line(image, start_pt, end_pt, (0, 255, 0), 1)
+                    # 시작점과 끝점에 작은 원 표시 (선택 사항)
                     cv2.circle(image, start_pt, 1, (255, 0, 0), -1)
                     cv2.circle(image, end_pt, 1, (0, 0, 255), -1)
                     
+            # 눈 앞머리와 뒷꼬리에 점 추가
+            # LEFT_EYE의 랜드마크 인덱스는 33과 133
             left_eye_start = landmarks[33]
             left_eye_end = landmarks[133]
+            # 눈 앞머리에 점
             cv2.circle(image, tuple(map(int, left_eye_start)), 2, (0, 255, 255), -1)
+            # 눈 뒷꼬리에 점
             cv2.circle(image, tuple(map(int, left_eye_end)), 2, (255, 255, 0), -1)
+            # 선 그리기 및 각도 계산
+            # 왼쪽 눈
             cv2.line(image, tuple(map(int, left_eye_start)), tuple(map(int, left_eye_end)), (255, 0, 0), 1)
+            # 각도 계산
             left_angle_info = calculate_vector_details(left_eye_start, left_eye_end)
             print(f"왼쪽 눈 각도: {left_angle_info['angle_degrees']:.2f}도")
+            # 눈의 크기 계산
             eye_width = np.linalg.norm(np.array(left_eye_end) - np.array(left_eye_start))
             print(f"왼쪽 눈 너비: {eye_width:.2f} 픽셀")
+            
+            # 눈 위쪽과 아래쪽 랜드마크 인덱스
+            left_eye_top = landmarks[159]  # 눈 위쪽 좌표
+            left_eye_bottom = landmarks[145]  # 눈 아래쪽 좌표
+
+            # 눈 위쪽과 아래쪽에 점 추가
+            cv2.circle(image, tuple(map(int, left_eye_top)), 2, (0, 255, 0), -1)  # 눈 위쪽에 점
+            cv2.circle(image, tuple(map(int, left_eye_bottom)), 2, (255, 0, 255), -1)  # 눈 아래쪽에 점
+
+            # 위쪽과 아래쪽 선 그리기
+            cv2.line(image, tuple(map(int, left_eye_top)), tuple(map(int, left_eye_bottom)), (0, 255, 255), 1)  # 선 그리기
+
+            # 위쪽과 아래쪽의 거리 계산
+            vertical_distance = np.linalg.norm(left_eye_top - left_eye_bottom)  # 거리 계산
+            print(f"왼쪽 눈의 위쪽과 아래쪽 거리: {vertical_distance:.2f}픽셀")  # 거리 출력
+
+            # RIGHT_EYE의 랜드마크 인덱스는 362와 263
+            # right_eye_start = landmarks[362]
+            # right_eye_end = landmarks[263]
+            # cv2.circle(image, tuple(map(int, right_eye_start)), 2, (0, 255, 255), -1)  # 눈 앞머리에 점
+            # cv2.circle(image, tuple(map(int, right_eye_end)), 2, (255, 255, 0), -1)    # 눈 뒷꼬리에 점
 
             nose_tip = landmarks[168]
             nose_base = landmarks[2]
-            nose_length = np.linalg.norm(nose_tip - nose_base)
-            print(f"코 길이: {nose_length:.2f}픽셀")
 
-            left_nostril = landmarks[48]
-            right_nostril = landmarks[278]
-            nostril_distance = np.linalg.norm(left_nostril - right_nostril)
-            print(f"코 양쪽 끝 거리: {nostril_distance:.2f}픽셀")
+            # 코 길이 계산
+            nose_length = np.linalg.norm(nose_tip - nose_base)  # 길이 계산
+            print(f"코 길이: {nose_length:.2f}픽셀")  # 길이 출력
 
+            # 코 끝과 시작에 점 찍기
+            cv2.circle(image, tuple(map(int, nose_tip)), 3, (0, 255, 0), -1)  # 코 끝에 점
+            cv2.circle(image, tuple(map(int, nose_base)), 3, (255, 0, 0), -1)  # 코 시작에 점
+            
+            # 코 끝과 시작에 선 긋기
+            cv2.line(image, tuple(map(int, nose_tip)), tuple(map(int, nose_base)), (0, 255, 255), 1)  # 선 그리기
+            
+            # 코의 양쪽 끝 인덱스
+            left_nostril = landmarks[48]  # 왼쪽 콧볼
+            right_nostril = landmarks[278]  # 오른쪽 콧볼
+
+            # 두 점에 점 찍기
+            cv2.circle(image, tuple(map(int, left_nostril)), 3, (0, 255, 0), -1)  # 왼쪽 콧볼에 점
+            cv2.circle(image, tuple(map(int, right_nostril)), 3, (255, 0, 0), -1)  # 오른쪽 콧볼에 점
+
+            cv2.line(image, tuple(map(int, left_nostril)), tuple(map(int, right_nostril)), (0, 255, 255), 1)  # 선 그리기
+
+            # 코 양쪽 끝 간의 거리 계산
+            nostril_distance = np.linalg.norm(left_nostril - right_nostril)  # 거리 계산
+            print(f"코 양쪽 끝 거리: {nostril_distance:.2f}픽셀")  # 거리 출력
             nose_ratio = nose_length / nostril_distance
             print(f"코 비율 (길이/너비): {nose_ratio:.2f}")
             landmarks_data['NOSE']['nose_ratio'] = nose_ratio
+            
+            # 입술 중앙 좌표
+            lip_center = landmarks[13]  # 입술 중앙 좌표
 
+            # 왼쪽 입꼬리와 오른쪽 입꼬리 좌표
+            left_corner = landmarks[62]  # 왼쪽 입꼬리
+            # right_corner = landmarks[54]  # 오른쪽 입꼬리
+
+            # 각도 계산 함수
+            def calculate_angle(point1, point2):
+                delta_x = point2[0] - point1[0]
+                delta_y = point2[1] - point1[1]
+                angle_rad = np.arctan2(delta_y, delta_x)  # 라디안으로 각도 계산
+                angle_deg = np.degrees(angle_rad)  # 도로 변환
+                # 수평선 기준으로 각도 조정 (0~360도 범위)
+                if angle_deg < 0:
+                    angle_deg += 360
+                return angle_deg
+
+            # 왼쪽 입꼬리와 중앙의 각도 계산
+            left_angle = calculate_angle(lip_center,    left_corner)
+            print(f"왼쪽 입꼬리 각도: {left_angle:.2f}도")
+
+            # # 오른쪽 입꼬리와 중앙의 각도 계산
+            # right_angle = calculate_angle(lip_center, right_corner)
+            # print(f"오른쪽 입꼬리 각도: {right_angle:.2f}도"
+            # 입술 중앙과 입꼬리에 점 찍기
+            cv2.circle(image, tuple(map(int, lip_center)), 3, (255, 255, 0), -1)  # 입술 중앙
+            cv2.circle(image, tuple(map(int, left_corner)), 3, (255, 0, 255), -1)  # 왼쪽 입꼬리
+            # cv2.circle(image, tuple(map(int, right_corner)), 3, (0, 255, 255), -1)  # 오른쪽 입꼬리
+            cv2.line(image, tuple(map(int, lip_center)), tuple(map(int, left_corner)), (0, 255, 255), 1)  # 선 그리기
         status = "success"
+    else:
+        status = "fail"
 
     save_json_data(image_path, landmarks_data, status, nose_ratio)
     save_processed_image(image_path, image, status)
